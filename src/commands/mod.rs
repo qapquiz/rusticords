@@ -1,1 +1,1 @@
-pub mod create_verify_message;
+pub mod create_embed_message;

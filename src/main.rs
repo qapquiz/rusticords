@@ -1,8 +1,8 @@
 mod commands;
 
 use std::env;
-
-use serenity::{prelude::{GatewayIntents, EventHandler, Context}, Client, model::prelude::{Message, Ready, interaction::{Interaction, InteractionResponseType}}, async_trait};
+use dotenv::dotenv;
+use serenity::{prelude::{GatewayIntents, EventHandler, Context}, Client, model::prelude::{Message, Ready, interaction::{Interaction, InteractionResponseType}, GuildId}, async_trait};
 
 struct Handler;
 
@@ -23,7 +23,7 @@ impl EventHandler for Handler {
 
             // doing the command
             let content = match command.data.name.as_str() {
-                "create_verify_message" => commands::create_verify_message::run(&command.data.options),
+                "create_embed_message" => commands::create_embed_message::run(&command.data.options),
                 _ => "Not implemented :(".to_string(),
             };
 
@@ -40,13 +40,29 @@ impl EventHandler for Handler {
         }
     }
 
-    async fn ready(&self, _: Context, ready: Ready) {
+    async fn ready(&self, ctx: Context, ready: Ready) {
         println!("{} is connected!", ready.user.name);
+
+        let guild_id = GuildId(
+            env::var("GUILD_ID")
+                .expect("Expected GUILD_ID in environment")
+                .parse()
+                .expect("GUILD_ID must be an integer"),
+        );
+
+        let commands = GuildId::set_application_commands(&guild_id, &ctx.http, |commands| {
+            commands.create_application_command(|command| commands::create_embed_message::register(command))
+        }).await;
+
+        println!("We now have the following guild slash commands: {:#?}", commands);
     }
 }
 
 #[tokio::main]
 async fn main() {
+    // Setup env
+    dotenv().ok();
+
     // Get DISCORD_TOKEN
     let token = env::var("DISCORD_TOKEN").expect("Expected a token in the environment");
 
